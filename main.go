@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -11,6 +14,16 @@ import (
 type List struct {
 	// set of numbers
 	numbers map[int]int
+}
+
+func (list *List) getSortedKeys() []int {
+	keys := make([]int, 0)
+	for start, _ := range list.numbers {
+		keys = append(keys, start)
+	}
+
+	sort.Sort(sort.IntSlice(keys))
+	return keys
 }
 
 func (list *List) appendNumber(from int, to int) {
@@ -90,5 +103,34 @@ func main() {
 		log.Fatal("no f provided")
 	}
 
-	fmt.Println(parseList(*f))
+	fieldsList := parseList(*f)
+	keys := fieldsList.getSortedKeys()
+
+	filename := flag.Args()[0]
+
+	file, err := os.Open(filename)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Split(line, "\t")
+
+		for _, from := range keys {
+			to := fieldsList.numbers[from]
+			if to == -1 {
+				to = len(fields)
+			}
+			for i := from; i <= to; i++ {
+				fmt.Printf("%s\t", fields[i-1])
+			}
+			fmt.Println()
+		}
+	}
+
 }
