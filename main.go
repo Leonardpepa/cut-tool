@@ -119,6 +119,33 @@ func main() {
 
 	flag.Parse()
 
+	validateFlags(f, b, c)
+
+	filename := flag.Args()[0]
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var list List
+	var worker func(line string, delimiter string, list List)
+
+	if *f != "" {
+		list = parseList(*f)
+		worker = fieldsWorker
+	}
+
+	if *b != "" {
+		list = parseList(*b)
+		worker = bytesWorker
+	}
+
+	traverseFileByLine(file, *d, list, worker)
+
+}
+
+func validateFlags(f *string, b *string, c *string) {
 	if *f != "" {
 		if *b != "" || *c != "" {
 			log.Fatal(toManyListArguments)
@@ -135,22 +162,10 @@ func main() {
 			log.Fatal(toManyListArguments)
 		}
 	}
-
-	fieldsList := parseList(*f)
-
-	filename := flag.Args()[0]
-
-	file, err := os.Open(filename)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	traverseFileByLine(file, *d, fieldsList, fieldsWorker)
-
 }
 
-func fieldsWorker(fields []string, list List) {
+func fieldsWorker(line string, delimiter string, list List) {
+	fields := strings.Split(line, delimiter)
 	for _, from := range list.SortedKeys() {
 		to := list.numbers[from]
 		if to == -1 {
@@ -162,14 +177,33 @@ func fieldsWorker(fields []string, list List) {
 	}
 }
 
-func traverseFileByLine(file *os.File, delimiter string, list List, work func(fields []string, list List)) {
+func bytesWorker(line string, _ string, list List) {
+	reader := strings.NewReader(line)
+
+	for _, from := range list.SortedKeys() {
+		to := list.numbers[from]
+		if to == -1 {
+			to = int(reader.Size())
+		}
+		for i := from; i <= to; i++ {
+			b := make([]byte, 1)
+			_, err := reader.ReadAt(b, int64(i-1))
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Printf("%s", string(b))
+		}
+	}
+}
+
+func traverseFileByLine(file *os.File, delimiter string, list List, work func(line string, delimiter string, list List)) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, delimiter)
-		work(fields, list)
+		work(line, delimiter, list)
 		fmt.Println()
 	}
 
