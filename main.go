@@ -13,17 +13,22 @@ import (
 
 type List struct {
 	// set of numbers
-	numbers map[int]int
+	numbers    map[int]int
+	sortedKeys []int
 }
 
-func (list *List) getSortedKeys() []int {
+func (list *List) SortKeys() {
 	keys := make([]int, 0)
-	for start, _ := range list.numbers {
+	for start := range list.numbers {
 		keys = append(keys, start)
 	}
 
 	sort.Sort(sort.IntSlice(keys))
-	return keys
+	list.sortedKeys = keys
+}
+
+func (list *List) SortedKeys() []int {
+	return list.sortedKeys
 }
 
 func (list *List) appendNumber(from int, to int) {
@@ -38,8 +43,13 @@ func (list *List) appendNumber(from int, to int) {
 
 func parseList(data string) List {
 	list := List{
-		numbers: make(map[int]int),
+		numbers:    make(map[int]int),
+		sortedKeys: make([]int, 0),
 	}
+
+	data = strings.TrimFunc(data, func(r rune) bool {
+		return r == '"'
+	})
 
 	values := strings.Split(data, ",")
 
@@ -96,6 +106,7 @@ func parseEmptyNumber(value string, defaultValue int) int {
 func main() {
 
 	f := flag.String("f", "", "fields_list")
+	d := flag.String("d", "", "fields_list")
 
 	flag.Parse()
 
@@ -103,8 +114,12 @@ func main() {
 		log.Fatal("no f provided")
 	}
 
+	if *d == "" {
+		*d = "\t"
+	}
+
 	fieldsList := parseList(*f)
-	keys := fieldsList.getSortedKeys()
+	fieldsList.SortKeys()
 
 	filename := flag.Args()[0]
 
@@ -119,9 +134,9 @@ func main() {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, "\t")
+		fields := strings.Split(line, *d)
 
-		for _, from := range keys {
+		for _, from := range fieldsList.SortedKeys() {
 			to := fieldsList.numbers[from]
 			if to == -1 {
 				to = len(fields)
@@ -129,8 +144,8 @@ func main() {
 			for i := from; i <= to; i++ {
 				fmt.Printf("%s\t", fields[i-1])
 			}
-			fmt.Println()
 		}
+		fmt.Println()
 	}
 
 }
