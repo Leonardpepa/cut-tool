@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -9,6 +10,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+)
+
+var (
+	toManyListArguments = errors.New("error more tha tow numbers in range")
+	decreasingRage      = errors.New("invalid decreasing range")
+	invalidRangeFormat  = errors.New("invalid range format")
 )
 
 type List struct {
@@ -78,14 +85,14 @@ func parseRange(data string) (start, end int) {
 	values := strings.Split(data, "-")
 
 	if len(values) != 2 {
-		log.Fatal("error more tha tow numbers in range")
+		log.Fatal(invalidRangeFormat)
 	}
 
 	start = parseEmptyNumber(values[0], 1)
 	end = parseEmptyNumber(values[1], -1)
 
 	if end != -1 && start > end {
-		log.Fatal("invalid decreasing range")
+		log.Fatal(decreasingRage)
 	}
 
 	return
@@ -106,16 +113,27 @@ func parseEmptyNumber(value string, defaultValue int) int {
 func main() {
 
 	f := flag.String("f", "", "fields_list")
-	d := flag.String("d", "", "fields_list")
+	b := flag.String("b", "", "bytes_list")
+	c := flag.String("c", "", "characters_list")
+	d := flag.String("d", "\t", "delimiter")
 
 	flag.Parse()
 
-	if *f == "" {
-		log.Fatal("no f provided")
+	if *f != "" {
+		if *b != "" || *c != "" {
+			log.Fatal(toManyListArguments)
+		}
+	}
+	if *b != "" {
+		if *f != "" || *c != "" {
+			log.Fatal(toManyListArguments)
+		}
 	}
 
-	if *d == "" {
-		*d = "\t"
+	if *c != "" {
+		if *b != "" || *f != "" {
+			log.Fatal(toManyListArguments)
+		}
 	}
 
 	fieldsList := parseList(*f)
@@ -128,22 +146,30 @@ func main() {
 		log.Fatal(err)
 	}
 
+	traverseFileByLine(file, *d, fieldsList, fieldsWorker)
+
+}
+
+func fieldsWorker(fields []string, list List) {
+	for _, from := range list.SortedKeys() {
+		to := list.numbers[from]
+		if to == -1 {
+			to = len(fields)
+		}
+		for i := from; i <= to; i++ {
+			fmt.Printf("%s ", fields[i-1])
+		}
+	}
+}
+
+func traverseFileByLine(file *os.File, delimiter string, list List, work func(fields []string, list List)) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, *d)
-
-		for _, from := range fieldsList.SortedKeys() {
-			to := fieldsList.numbers[from]
-			if to == -1 {
-				to = len(fields)
-			}
-			for i := from; i <= to; i++ {
-				fmt.Printf("%s\t", fields[i-1])
-			}
-		}
+		fields := strings.Split(line, delimiter)
+		work(fields, list)
 		fmt.Println()
 	}
 
