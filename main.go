@@ -14,13 +14,18 @@ type List struct {
 }
 
 func (list *List) appendNumber(from int, to int) {
-	list.numbers[from] = to
-}
 
-func (list *List) appendListOfNumber(nums []int) {
-	for _, num := range nums {
-		list.appendNumber(num, num)
+	for start, end := range list.numbers {
+		if from >= start && to <= end {
+			from = start
+		}
+
+		if end >= to && from <= start {
+			to = end
+		}
 	}
+
+	list.numbers[from] = to
 }
 
 func parseList(data string) List {
