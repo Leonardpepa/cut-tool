@@ -141,6 +141,13 @@ func main() {
 		worker = bytesWorker
 	}
 
+	// same as bytes
+	// doesnt support multibyte chars for now
+	if *c != "" {
+		list = parseList(*c)
+		worker = bytesWorker
+	}
+
 	traverseFileByLine(file, *d, list, worker)
 
 }
