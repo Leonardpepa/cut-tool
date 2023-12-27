@@ -14,17 +14,12 @@ type List struct {
 }
 
 func (list *List) appendNumber(from int, to int) {
-
 	for start, end := range list.numbers {
-		if from >= start && to <= end {
-			from = start
-		}
-
-		if end >= to && from <= start {
-			to = end
+		if start > from && (end < to || to == -1) {
+			delete(list.numbers, start)
+			list.numbers[from] = to
 		}
 	}
-
 	list.numbers[from] = to
 }
 
