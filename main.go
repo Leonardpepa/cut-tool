@@ -69,7 +69,7 @@ func parseList(data string) List {
 			list.appendNumber(num, num)
 		}
 	}
-
+	list.SortKeys()
 	return list
 }
 
@@ -119,7 +119,6 @@ func main() {
 	}
 
 	fieldsList := parseList(*f)
-	fieldsList.SortKeys()
 
 	filename := flag.Args()[0]
 
