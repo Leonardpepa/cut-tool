@@ -135,10 +135,8 @@ func prepareTheArguments(data string) []string {
 	values := strings.Split(data, ",")
 
 	for _, val := range values {
-		args = append(args, strings.Split(val, "")...)
+		args = append(args, strings.Split(val, " ")...)
 	}
-
-	args = append(args, values...)
 
 	return args
 }
