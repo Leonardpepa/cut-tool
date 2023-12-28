@@ -37,8 +37,9 @@ func main() {
 
 	validateFlags(f, b, c)
 
-	var list List
-	var worker func(line string, delimiter string, list List)
+	var list *List
+	var worker func(line string, delimiter string, list *List)
+	var err error
 
 	delimiter := *d
 
@@ -48,20 +49,24 @@ func main() {
 	}
 
 	if *f != "" {
-		list = parseList(*f)
+		list, err = parseList(*f)
 		worker = fieldsWorker
 	}
 
 	if *b != "" {
-		list = parseList(*b)
+		list, err = parseList(*b)
 		worker = bytesWorker
 	}
 
 	// same as bytes
 	// doesn't support multibyte chars for now
 	if *c != "" {
-		list = parseList(*c)
+		list, err = parseList(*c)
 		worker = bytesWorker
+	}
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	run(delimiter, list, worker)
@@ -92,8 +97,8 @@ func (list *List) appendNumber(from int, to int) {
 	list.ranges[from] = to
 }
 
-func parseList(data string) List {
-	list := List{
+func parseList(data string) (*List, error) {
+	list := &List{
 		ranges:     make(map[int]int),
 		sortedKeys: make([]int, 0),
 	}
@@ -113,7 +118,7 @@ func parseList(data string) List {
 		num, err := strconv.Atoi(val)
 
 		if err != nil {
-			log.Fatal(invalidNumberFormat)
+			return nil, invalidNumberFormat
 		}
 
 		list.appendNumber(num, num)
@@ -121,7 +126,7 @@ func parseList(data string) List {
 
 	list.SortKeys()
 
-	return list
+	return list, nil
 }
 
 // split the list items
@@ -178,7 +183,7 @@ func parseEmptyNumberInRange(value string, defaultValue int) int {
 	return defaultValue
 }
 
-func run(delimiter string, list List, worker func(line string, delimiter string, list List)) {
+func run(delimiter string, list *List, worker func(line string, delimiter string, list *List)) {
 	filenames := flag.Args()
 
 	if len(filenames) == 0 || (len(filenames) == 1 && filenames[0] == "-") {
@@ -219,12 +224,16 @@ func validateFlags(f *string, b *string, c *string) {
 	}
 }
 
-func fieldsWorker(line string, delimiter string, list List) {
-	fields := strings.Split(line, string(delimiter[0]))
-	for _, from := range list.SortedKeys() {
+func fieldsWorker(line string, delimiter string, list *List) {
+	fields := strings.Split(line, delimiter)
+	for index, from := range list.SortedKeys() {
 		to := list.ranges[from]
 		if to == -1 || to > len(fields) {
 			to = len(fields)
+		}
+		// dont print the comma in the end
+		if index == len(list.SortedKeys())-1 {
+			delimiter = ""
 		}
 		for i := from; i <= to; i++ {
 			fmt.Printf("%s%s", fields[i-1], delimiter)
@@ -232,7 +241,7 @@ func fieldsWorker(line string, delimiter string, list List) {
 	}
 }
 
-func bytesWorker(line string, _ string, list List) {
+func bytesWorker(line string, _ string, list *List) {
 	reader := strings.NewReader(line)
 
 	for _, from := range list.SortedKeys() {
@@ -252,7 +261,7 @@ func bytesWorker(line string, _ string, list List) {
 	}
 }
 
-func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list List, work func(line string, delimiter string, list List)) {
+func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *List, work func(line string, delimiter string, list *List)) {
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
