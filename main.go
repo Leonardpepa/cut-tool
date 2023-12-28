@@ -237,7 +237,7 @@ func fieldsWorker(line string, delimiter string, list *List) {
 		if to == -1 || to > len(fields) {
 			to = len(fields)
 		}
-		// dont print the comma in the end
+		// don't print the comma in the end
 		if index == len(list.SortedKeys())-1 {
 			delimiter = ""
 		}
