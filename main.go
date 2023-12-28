@@ -76,6 +76,8 @@ func parseList(data string) List {
 	return list
 }
 
+// split the list items
+// numbers, ranges with -, ranges with space
 func prepareTheArguments(data string) []string {
 	args := make([]string, 0)
 	data = strings.TrimFunc(data, func(r rune) bool {
@@ -101,8 +103,11 @@ func parseRange(data string) (start, end int) {
 		log.Fatal(invalidRangeFormat)
 	}
 
-	start = parseEmptyNumber(values[0], 1)
-	end = parseEmptyNumber(values[1], -1)
+	// default 0 means from the beginning of the file
+	start = parseEmptyNumberInRange(values[0], 1)
+
+	// default -1 means end of the line
+	end = parseEmptyNumberInRange(values[1], -1)
 
 	if end != -1 && start > end {
 		log.Fatal(decreasingRage)
@@ -111,7 +116,7 @@ func parseRange(data string) (start, end int) {
 	return
 }
 
-func parseEmptyNumber(value string, defaultValue int) int {
+func parseEmptyNumberInRange(value string, defaultValue int) int {
 	if value != "" {
 		num, err := strconv.Atoi(value)
 		if err != nil {
