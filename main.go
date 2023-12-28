@@ -150,7 +150,7 @@ func parseRange(data string) (start, end int) {
 		log.Fatal(invalidRangeFormat)
 	}
 
-	// default 0 means from the beginning of the file
+	// default 0 means from the beginning of the line
 	start = parseEmptyNumberInRange(values[0], 1)
 
 	// default -1 means end of the line
