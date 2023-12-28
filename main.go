@@ -35,11 +35,13 @@ func main() {
 
 	flag.Parse()
 
-	validateFlags(f, b, c)
+	err := validateFlags(f, b, c)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var list *List
 	var worker func(line string, delimiter string, list *List)
-	var err error
 
 	delimiter := *d
 
@@ -110,7 +112,10 @@ func parseList(data string) (*List, error) {
 		isRange := strings.Contains(val, "-")
 
 		if isRange {
-			start, end := parseRange(val)
+			start, end, err := parseRange(val)
+			if err != nil {
+				return nil, err
+			}
 			list.appendNumber(start, end)
 			continue
 		}
@@ -146,10 +151,10 @@ func prepareTheArguments(data string) []string {
 	return args
 }
 
-func parseRange(data string) (start, end int) {
+func parseRange(data string) (start, end int, err error) {
 
 	if data == "-" {
-		log.Fatal(invalidRangeWithNoEndPoint)
+		err = invalidRangeWithNoEndPoint
 	}
 
 	values := strings.Split(data, "-")
@@ -159,28 +164,28 @@ func parseRange(data string) (start, end int) {
 	}
 
 	// default 0 means from the beginning of the line
-	start = parseEmptyNumberInRange(values[0], 1)
+	start, err = parseEmptyNumberInRange(values[0], 1)
 
 	// default -1 means end of the line
-	end = parseEmptyNumberInRange(values[1], -1)
+	end, err = parseEmptyNumberInRange(values[1], -1)
 
 	if end != -1 && start > end {
-		log.Fatal(decreasingRage)
+		err = decreasingRage
 	}
 
 	return
 }
 
-func parseEmptyNumberInRange(value string, defaultValue int) int {
+func parseEmptyNumberInRange(value string, defaultValue int) (int, error) {
 	if value != "" {
 		num, err := strconv.Atoi(value)
 		if err != nil {
-			log.Fatal(err)
+			return 0, err
 		}
 
-		return num
+		return num, nil
 	}
-	return defaultValue
+	return defaultValue, nil
 }
 
 func run(delimiter string, list *List, worker func(line string, delimiter string, list *List)) {
@@ -205,23 +210,24 @@ func run(delimiter string, list *List, worker func(line string, delimiter string
 	}
 }
 
-func validateFlags(f *string, b *string, c *string) {
+func validateFlags(f *string, b *string, c *string) error {
 	if *f != "" {
 		if *b != "" || *c != "" {
-			log.Fatal(toManyListArguments)
+			return toManyListArguments
 		}
 	}
 	if *b != "" {
 		if *f != "" || *c != "" {
-			log.Fatal(toManyListArguments)
+			return toManyListArguments
 		}
 	}
 
 	if *c != "" {
 		if *b != "" || *f != "" {
-			log.Fatal(toManyListArguments)
+			return toManyListArguments
 		}
 	}
+	return nil
 }
 
 func fieldsWorker(line string, delimiter string, list *List) {
