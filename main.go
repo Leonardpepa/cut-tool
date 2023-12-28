@@ -54,11 +54,7 @@ func parseList(data string) List {
 		sortedKeys: make([]int, 0),
 	}
 
-	data = strings.TrimFunc(data, func(r rune) bool {
-		return r == '"'
-	})
-
-	values := strings.Split(data, ",")
+	values := prepareTheArguments(data)
 
 	for _, val := range values {
 
@@ -78,6 +74,23 @@ func parseList(data string) List {
 	}
 	list.SortKeys()
 	return list
+}
+
+func prepareTheArguments(data string) []string {
+	args := make([]string, 0)
+	data = strings.TrimFunc(data, func(r rune) bool {
+		return r == '"'
+	})
+
+	values := strings.Split(data, ",")
+
+	for _, val := range values {
+		args = append(args, strings.Split(val, "")...)
+	}
+
+	args = append(args, values...)
+
+	return args
 }
 
 func parseRange(data string) (start, end int) {
@@ -154,12 +167,17 @@ func main() {
 func run(delimiter string, list List, worker func(line string, delimiter string, list List)) {
 	filenames := flag.Args()
 
+	if len(filenames) == 0 || (len(filenames) == 1 && filenames[0] == "-") {
+		traverseFileByLine(bufio.NewScanner(os.Stdin), delimiter, list, worker)
+		return
+	}
+
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
 		if err != nil {
 			log.Fatal(err)
 		}
-		traverseFileByLine(file, delimiter, list, worker)
+		traverseFileByLine(bufio.NewScanner(file), delimiter, list, worker)
 
 		err = file.Close()
 		if err != nil {
@@ -191,11 +209,11 @@ func fieldsWorker(line string, delimiter string, list List) {
 	fields := strings.Split(line, string(delimiter[0]))
 	for _, from := range list.SortedKeys() {
 		to := list.numbers[from]
-		if to == -1 {
+		if to == -1 || to > len(fields) {
 			to = len(fields)
 		}
 		for i := from; i <= to; i++ {
-			fmt.Printf("%s ", fields[i-1])
+			fmt.Printf("%s%s", fields[i-1], delimiter)
 		}
 	}
 }
@@ -205,7 +223,7 @@ func bytesWorker(line string, _ string, list List) {
 
 	for _, from := range list.SortedKeys() {
 		to := list.numbers[from]
-		if to == -1 {
+		if to == -1 || to > int(reader.Size()) {
 			to = int(reader.Size())
 		}
 		for i := from; i <= to; i++ {
@@ -220,8 +238,7 @@ func bytesWorker(line string, _ string, list List) {
 	}
 }
 
-func traverseFileByLine(file *os.File, delimiter string, list List, work func(line string, delimiter string, list List)) {
-	scanner := bufio.NewScanner(file)
+func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list List, work func(line string, delimiter string, list List)) {
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
