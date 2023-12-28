@@ -13,20 +13,21 @@ import (
 )
 
 var (
-	toManyListArguments = errors.New("error more tha tow numbers in range")
+	toManyListArguments = errors.New("error more tha tow ranges in range")
 	decreasingRage      = errors.New("invalid decreasing range")
 	invalidRangeFormat  = errors.New("invalid range format")
+	invalidNumberFormat = errors.New("invalid number format")
 )
 
 type List struct {
-	// set of numbers
-	numbers    map[int]int
+	// set of ranges
+	ranges     map[int]int
 	sortedKeys []int
 }
 
 func (list *List) SortKeys() {
 	keys := make([]int, 0)
-	for start := range list.numbers {
+	for start := range list.ranges {
 		keys = append(keys, start)
 	}
 
@@ -39,18 +40,19 @@ func (list *List) SortedKeys() []int {
 }
 
 func (list *List) appendNumber(from int, to int) {
-	for start, end := range list.numbers {
+	// merge ranges if needed
+	for start, end := range list.ranges {
 		if start > from && (end < to || to == -1) {
-			delete(list.numbers, start)
-			list.numbers[from] = to
+			delete(list.ranges, start)
+			list.ranges[from] = to
 		}
 	}
-	list.numbers[from] = to
+	list.ranges[from] = to
 }
 
 func parseList(data string) List {
 	list := List{
-		numbers:    make(map[int]int),
+		ranges:     make(map[int]int),
 		sortedKeys: make([]int, 0),
 	}
 
@@ -68,16 +70,20 @@ func parseList(data string) List {
 
 		num, err := strconv.Atoi(val)
 
-		if err == nil {
-			list.appendNumber(num, num)
+		if err != nil {
+			log.Fatal(invalidNumberFormat)
 		}
+
+		list.appendNumber(num, num)
 	}
+
 	list.SortKeys()
+
 	return list
 }
 
 // split the list items
-// numbers, ranges with -, ranges with space
+// ranges, ranges with -, ranges with space
 func prepareTheArguments(data string) []string {
 	args := make([]string, 0)
 	data = strings.TrimFunc(data, func(r rune) bool {
@@ -213,7 +219,7 @@ func validateFlags(f *string, b *string, c *string) {
 func fieldsWorker(line string, delimiter string, list List) {
 	fields := strings.Split(line, string(delimiter[0]))
 	for _, from := range list.SortedKeys() {
-		to := list.numbers[from]
+		to := list.ranges[from]
 		if to == -1 || to > len(fields) {
 			to = len(fields)
 		}
@@ -227,7 +233,7 @@ func bytesWorker(line string, _ string, list List) {
 	reader := strings.NewReader(line)
 
 	for _, from := range list.SortedKeys() {
-		to := list.numbers[from]
+		to := list.ranges[from]
 		if to == -1 || to > int(reader.Size()) {
 			to = int(reader.Size())
 		}
