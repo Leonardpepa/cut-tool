@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	toManyListArguments = errors.New(" only one type of list may be specified")
-	decreasingRage      = errors.New("invalid decreasing range")
-	invalidRangeFormat  = errors.New("invalid range format")
-	invalidNumberFormat = errors.New("invalid number format")
+	toManyListArguments        = errors.New(" only one type of list may be specified")
+	decreasingRage             = errors.New("invalid decreasing range")
+	invalidRangeFormat         = errors.New("invalid range format")
+	invalidNumberFormat        = errors.New("invalid number format")
+	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
 )
 
 type List struct {
@@ -143,6 +144,10 @@ func prepareTheArguments(data string) []string {
 }
 
 func parseRange(data string) (start, end int) {
+
+	if data == "-" {
+		log.Fatal(invalidRangeWithNoEndPoint)
+	}
 
 	values := strings.Split(data, "-")
 
