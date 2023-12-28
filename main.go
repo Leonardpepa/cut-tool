@@ -25,6 +25,47 @@ type List struct {
 	sortedKeys []int
 }
 
+func main() {
+
+	f := flag.String("f", "", "fields_list")
+	b := flag.String("b", "", "bytes_list")
+	c := flag.String("c", "", "characters_list")
+	d := flag.String("d", "\t", "delimiter")
+
+	flag.Parse()
+
+	validateFlags(f, b, c)
+
+	var list List
+	var worker func(line string, delimiter string, list List)
+
+	delimiter := *d
+
+	//  use the first character
+	if delimiter != "\t" {
+		delimiter = string(delimiter[0])
+	}
+
+	if *f != "" {
+		list = parseList(*f)
+		worker = fieldsWorker
+	}
+
+	if *b != "" {
+		list = parseList(*b)
+		worker = bytesWorker
+	}
+
+	// same as bytes
+	// doesn't support multibyte chars for now
+	if *c != "" {
+		list = parseList(*c)
+		worker = bytesWorker
+	}
+
+	run(delimiter, list, worker)
+}
+
 func (list *List) SortKeys() {
 	keys := make([]int, 0)
 	for start := range list.ranges {
@@ -132,47 +173,6 @@ func parseEmptyNumberInRange(value string, defaultValue int) int {
 		return num
 	}
 	return defaultValue
-}
-
-func main() {
-
-	f := flag.String("f", "", "fields_list")
-	b := flag.String("b", "", "bytes_list")
-	c := flag.String("c", "", "characters_list")
-	d := flag.String("d", "\t", "delimiter")
-
-	flag.Parse()
-
-	validateFlags(f, b, c)
-
-	var list List
-	var worker func(line string, delimiter string, list List)
-
-	delimiter := *d
-
-	//  use the first character
-	if delimiter != "\t" {
-		delimiter = string(delimiter[0])
-	}
-
-	if *f != "" {
-		list = parseList(*f)
-		worker = fieldsWorker
-	}
-
-	if *b != "" {
-		list = parseList(*b)
-		worker = bytesWorker
-	}
-
-	// same as bytes
-	// doesn't support multibyte chars for now
-	if *c != "" {
-		list = parseList(*c)
-		worker = bytesWorker
-	}
-
-	run(delimiter, list, worker)
 }
 
 func run(delimiter string, list List, worker func(line string, delimiter string, list List)) {
