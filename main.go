@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	toManyListArguments = errors.New("error more tha tow ranges in range")
+	toManyListArguments = errors.New(" only one type of list may be specified")
 	decreasingRage      = errors.New("invalid decreasing range")
 	invalidRangeFormat  = errors.New("invalid range format")
 	invalidNumberFormat = errors.New("invalid number format")
