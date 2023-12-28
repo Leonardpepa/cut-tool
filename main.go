@@ -41,7 +41,7 @@ func main() {
 	}
 
 	var list *List
-	var worker func(line string, delimiter string, list *List)
+	var worker func(line string, delimiter string, list *List) (string, error)
 
 	delimiter := *d
 
@@ -188,7 +188,7 @@ func parseEmptyNumberInRange(value string, defaultValue int) (int, error) {
 	return defaultValue, nil
 }
 
-func run(delimiter string, list *List, worker func(line string, delimiter string, list *List)) {
+func run(delimiter string, list *List, worker func(line string, delimiter string, list *List) (string, error)) {
 	filenames := flag.Args()
 
 	if len(filenames) == 0 || (len(filenames) == 1 && filenames[0] == "-") {
@@ -230,8 +230,11 @@ func validateFlags(f *string, b *string, c *string) error {
 	return nil
 }
 
-func fieldsWorker(line string, delimiter string, list *List) {
+func fieldsWorker(line string, delimiter string, list *List) (string, error) {
 	fields := strings.Split(line, delimiter)
+
+	var builder strings.Builder
+
 	for index, from := range list.SortedKeys() {
 		to := list.ranges[from]
 		if to == -1 || to > len(fields) {
@@ -242,14 +245,16 @@ func fieldsWorker(line string, delimiter string, list *List) {
 			delimiter = ""
 		}
 		for i := from; i <= to; i++ {
-			fmt.Printf("%s%s", fields[i-1], delimiter)
+			builder.WriteString(fmt.Sprintf("%s%s", fields[i-1], delimiter))
 		}
 	}
+
+	return builder.String(), nil
 }
 
-func bytesWorker(line string, _ string, list *List) {
+func bytesWorker(line string, _ string, list *List) (string, error) {
 	reader := strings.NewReader(line)
-
+	var builder strings.Builder
 	for _, from := range list.SortedKeys() {
 		to := list.ranges[from]
 		if to == -1 || to > int(reader.Size()) {
@@ -259,21 +264,26 @@ func bytesWorker(line string, _ string, list *List) {
 			b := make([]byte, 1)
 			_, err := reader.ReadAt(b, int64(i-1))
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
 
-			fmt.Printf("%s", string(b))
+			builder.WriteString(fmt.Sprintf("%s", string(b)))
 		}
 	}
+
+	return builder.String(), nil
 }
 
-func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *List, work func(line string, delimiter string, list *List)) {
+func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *List, work func(line string, delimiter string, list *List) (string, error)) {
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		work(line, delimiter, list)
-		fmt.Println()
+		s, err := work(line, delimiter, list)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Println(s)
 	}
 
 }
