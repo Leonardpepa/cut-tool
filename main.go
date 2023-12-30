@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -18,37 +16,28 @@ var (
 	invalidRangeFormat         = errors.New("invalid range format")
 	invalidNumberFormat        = errors.New("invalid number format")
 	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
+	delimiterError             = errors.New("an input delimiter may be specified only when operating on fields")
 )
 
-type List struct {
-	// set of ranges
-	ranges     map[int]int
-	sortedKeys []int
-}
-
 func main() {
+
+	var delimiter string
 
 	f := flag.String("f", "", "fields_list")
 	b := flag.String("b", "", "bytes_list")
 	c := flag.String("c", "", "characters_list")
-	d := flag.String("d", "\t", "delimiter")
+	flag.StringVar(&delimiter, "d", "\t", "delimiter")
 
 	flag.Parse()
 
-	err := validateFlags(f, b, c)
+	err := validateFlags(f, b, c, &delimiter)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var list *List
 	var worker func(line string, delimiter string, list *List) (string, error)
-
-	delimiter := *d
-
-	//  use the first character
-	if delimiter != "\t" {
-		delimiter = string(delimiter[0])
-	}
 
 	if *f != "" {
 		list, err = parseList(*f)
@@ -74,131 +63,6 @@ func main() {
 	run(delimiter, list, worker)
 }
 
-func (list *List) SortKeys() {
-	keys := make([]int, 0)
-	for start := range list.ranges {
-		keys = append(keys, start)
-	}
-
-	sort.Sort(sort.IntSlice(keys))
-	list.sortedKeys = keys
-}
-
-func (list *List) SortedKeys() []int {
-	return list.sortedKeys
-}
-
-func (list *List) appendNumber(from int, to int) {
-	alreadyAdded := false
-	// merge ranges if needed
-	for start, end := range list.ranges {
-		if from-1 <= start && (to > end && end != -1 || to == -1) {
-			if from-1 == start || from == start {
-				list.ranges[start] = to
-			} else {
-				delete(list.ranges, start)
-				list.ranges[from] = to
-			}
-			alreadyAdded = true
-		} else if from >= start && ((to < end && to != -1) || (to == end)) {
-			alreadyAdded = true
-		}
-	}
-
-	if !alreadyAdded {
-		list.ranges[from] = to
-	}
-}
-
-func parseList(data string) (*List, error) {
-	list := &List{
-		ranges:     make(map[int]int),
-		sortedKeys: make([]int, 0),
-	}
-
-	values := prepareTheArguments(data)
-
-	for _, val := range values {
-
-		isRange := strings.Contains(val, "-")
-
-		if isRange {
-			start, end, err := parseRange(val)
-			if err != nil {
-				return nil, err
-			}
-			list.appendNumber(start, end)
-			continue
-		}
-
-		num, err := strconv.Atoi(val)
-
-		if err != nil {
-			return nil, invalidNumberFormat
-		}
-
-		list.appendNumber(num, num)
-	}
-
-	list.SortKeys()
-
-	return list, nil
-}
-
-// split the list items
-// ranges, ranges with -, ranges with space
-func prepareTheArguments(data string) []string {
-	args := make([]string, 0)
-	data = strings.TrimFunc(data, func(r rune) bool {
-		return r == '"'
-	})
-
-	values := strings.Split(data, ",")
-
-	for _, val := range values {
-		args = append(args, strings.Split(val, " ")...)
-	}
-
-	return args
-}
-
-func parseRange(data string) (start, end int, err error) {
-
-	if data == "-" {
-		err = invalidRangeWithNoEndPoint
-	}
-
-	values := strings.Split(data, "-")
-
-	if len(values) != 2 {
-		log.Fatal(invalidRangeFormat)
-	}
-
-	// default 0 means from the beginning of the line
-	start, err = parseEmptyNumberInRange(values[0], 1)
-
-	// default -1 means end of the line
-	end, err = parseEmptyNumberInRange(values[1], -1)
-
-	if end != -1 && start > end {
-		err = decreasingRage
-	}
-
-	return
-}
-
-func parseEmptyNumberInRange(value string, defaultValue int) (int, error) {
-	if value != "" {
-		num, err := strconv.Atoi(value)
-		if err != nil {
-			return 0, err
-		}
-
-		return num, nil
-	}
-	return defaultValue, nil
-}
-
 func run(delimiter string, list *List, worker func(line string, delimiter string, list *List) (string, error)) {
 	filenames := flag.Args()
 
@@ -221,12 +85,13 @@ func run(delimiter string, list *List, worker func(line string, delimiter string
 	}
 }
 
-func validateFlags(f *string, b *string, c *string) error {
+func validateFlags(f, b, c, d *string) error {
 	if *f != "" {
 		if *b != "" || *c != "" {
 			return toManyListArguments
 		}
 	}
+
 	if *b != "" {
 		if *f != "" || *c != "" {
 			return toManyListArguments
@@ -238,6 +103,16 @@ func validateFlags(f *string, b *string, c *string) error {
 			return toManyListArguments
 		}
 	}
+
+	if *d != "\t" && *f == "" {
+		return delimiterError
+	}
+
+	// use the first char as delimiter
+	if *d != "\t" {
+		*d = string(string(*d)[0])
+	}
+
 	return nil
 }
 
