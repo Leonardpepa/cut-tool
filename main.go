@@ -14,6 +14,7 @@ import (
 var (
 	toManyListArguments = errors.New(" only one type of list may be specified")
 	delimiterError      = errors.New("an input delimiter may be specified only when operating on fields")
+	noFlagSpecified     = errors.New("no flag specified")
 )
 
 func main() {
@@ -83,6 +84,11 @@ func run(delimiter string, list *internal.List, worker func(line string, delimit
 }
 
 func validateFlags(f, b, c, d *string) error {
+
+	if *f == "" && *b == "" && *c == "" {
+		return noFlagSpecified
+	}
+
 	if *f != "" {
 		if *b != "" || *c != "" {
 			return toManyListArguments
