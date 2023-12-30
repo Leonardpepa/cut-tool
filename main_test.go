@@ -15,6 +15,7 @@ func TestValidateFlags(t *testing.T) {
 
 		testInvalidFlags(t, "-f", "-b", "-c", defaultDelimiter, toManyListArguments)
 		testInvalidFlags(t, "", "-b", "", ",", delimiterError)
+		testInvalidFlags(t, "", "", "-c", ",", delimiterError)
 		testInvalidFlags(t, "", "", "", defaultDelimiter, noFlagSpecified)
 
 	})
