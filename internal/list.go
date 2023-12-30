@@ -1,16 +1,28 @@
-package main
+package internal
 
 import (
+	"errors"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
 )
 
+var (
+	decreasingRage             = errors.New("invalid decreasing range")
+	invalidRangeFormat         = errors.New("invalid range format")
+	invalidNumberFormat        = errors.New("invalid number format")
+	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
+)
+
 type List struct {
 	// set of ranges
 	ranges     map[int]int
 	sortedKeys []int
+}
+
+func (list *List) Range(start int) int {
+	return list.ranges[start]
 }
 
 func (list *List) SortKeys() {
@@ -49,7 +61,7 @@ func (list *List) appendNumber(from int, to int) {
 	}
 }
 
-func parseList(data string) (*List, error) {
+func ParseList(data string) (*List, error) {
 	list := &List{
 		ranges:     make(map[int]int),
 		sortedKeys: make([]int, 0),

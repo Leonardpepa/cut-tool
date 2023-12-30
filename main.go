@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"cut-tool/internal"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,12 +12,8 @@ import (
 )
 
 var (
-	toManyListArguments        = errors.New(" only one type of list may be specified")
-	decreasingRage             = errors.New("invalid decreasing range")
-	invalidRangeFormat         = errors.New("invalid range format")
-	invalidNumberFormat        = errors.New("invalid number format")
-	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
-	delimiterError             = errors.New("an input delimiter may be specified only when operating on fields")
+	toManyListArguments = errors.New(" only one type of list may be specified")
+	delimiterError      = errors.New("an input delimiter may be specified only when operating on fields")
 )
 
 func main() {
@@ -36,23 +33,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var list *List
-	var worker func(line string, delimiter string, list *List) (string, error)
+	var list *internal.List
+	var worker func(line string, delimiter string, list *internal.List) (string, error)
 
 	if *f != "" {
-		list, err = parseList(*f)
+		list, err = internal.ParseList(*f)
 		worker = fieldsWorker
 	}
 
 	if *b != "" {
-		list, err = parseList(*b)
+		list, err = internal.ParseList(*b)
 		worker = bytesWorker
 	}
 
 	// same as bytes
 	// doesn't support multibyte chars for now
 	if *c != "" {
-		list, err = parseList(*c)
+		list, err = internal.ParseList(*c)
 		worker = bytesWorker
 	}
 
@@ -63,7 +60,7 @@ func main() {
 	run(delimiter, list, worker)
 }
 
-func run(delimiter string, list *List, worker func(line string, delimiter string, list *List) (string, error)) {
+func run(delimiter string, list *internal.List, worker func(line string, delimiter string, list *internal.List) (string, error)) {
 	filenames := flag.Args()
 
 	if len(filenames) == 0 || (len(filenames) == 1 && filenames[0] == "-") {
@@ -116,13 +113,13 @@ func validateFlags(f, b, c, d *string) error {
 	return nil
 }
 
-func fieldsWorker(line string, delimiter string, list *List) (string, error) {
+func fieldsWorker(line string, delimiter string, list *internal.List) (string, error) {
 	fields := strings.Split(line, delimiter)
 
 	var builder strings.Builder
 
 	for index, from := range list.SortedKeys() {
-		to := list.ranges[from]
+		to := list.Range(from)
 		if to == -1 || to > len(fields) {
 			to = len(fields)
 		}
@@ -138,11 +135,11 @@ func fieldsWorker(line string, delimiter string, list *List) (string, error) {
 	return builder.String(), nil
 }
 
-func bytesWorker(line string, _ string, list *List) (string, error) {
+func bytesWorker(line string, _ string, list *internal.List) (string, error) {
 	reader := strings.NewReader(line)
 	var builder strings.Builder
 	for _, from := range list.SortedKeys() {
-		to := list.ranges[from]
+		to := list.Range(from)
 		if to == -1 || to > int(reader.Size()) {
 			to = int(reader.Size())
 		}
@@ -160,7 +157,7 @@ func bytesWorker(line string, _ string, list *List) (string, error) {
 	return builder.String(), nil
 }
 
-func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *List, work func(line string, delimiter string, list *List) (string, error)) {
+func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *internal.List, work func(line string, delimiter string, list *internal.List) (string, error)) {
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
