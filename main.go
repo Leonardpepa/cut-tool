@@ -39,19 +39,19 @@ func main() {
 
 	if *f != "" {
 		list, err = internal.ParseList(*f)
-		worker = fieldsWorker
+		worker = extractFields
 	}
 
 	if *b != "" {
 		list, err = internal.ParseList(*b)
-		worker = bytesWorker
+		worker = extractBytes
 	}
 
 	// same as bytes
 	// doesn't support multibyte chars for now
 	if *c != "" {
 		list, err = internal.ParseList(*c)
-		worker = bytesWorker
+		worker = extractBytes
 	}
 
 	if err != nil {
@@ -119,7 +119,7 @@ func validateFlags(f, b, c, d *string) error {
 	return nil
 }
 
-func fieldsWorker(line string, delimiter string, list *internal.List) (string, error) {
+func extractFields(line string, delimiter string, list *internal.List) (string, error) {
 	fields := strings.Split(line, delimiter)
 
 	var builder strings.Builder
@@ -141,7 +141,7 @@ func fieldsWorker(line string, delimiter string, list *internal.List) (string, e
 	return builder.String(), nil
 }
 
-func bytesWorker(line string, _ string, list *internal.List) (string, error) {
+func extractBytes(line string, _ string, list *internal.List) (string, error) {
 	reader := strings.NewReader(line)
 	var builder strings.Builder
 	for _, from := range list.SortedKeys() {
