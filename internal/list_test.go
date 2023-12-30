@@ -11,9 +11,9 @@ func TestParseList(t *testing.T) {
 
 		testList(t, "1,2,3", map[int]int{1: 3})
 
-		testList(t, "1-", map[int]int{1: endOfTheList})
+		testList(t, "1-", map[int]int{1: EndOfTheList})
 
-		testList(t, "3-4,1-1,5-", map[int]int{1: 1, 3: endOfTheList})
+		testList(t, "3-4,1-1,5-", map[int]int{1: 1, 3: EndOfTheList})
 
 		testList(t, "1,1,1,1-1", map[int]int{1: 1})
 

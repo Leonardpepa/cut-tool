@@ -16,7 +16,7 @@ var (
 	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
 )
 
-const endOfTheList = math.MaxInt32
+const EndOfTheList = math.MaxInt32
 
 type List struct {
 	// set of ranges
@@ -148,7 +148,7 @@ func parseRange(data string) (int, int, error) {
 	}
 
 	// default -1 means end of the line
-	end, err := parseEmptyNumberInRange(values[1], endOfTheList)
+	end, err := parseEmptyNumberInRange(values[1], EndOfTheList)
 
 	if err != nil {
 		return 0, 0, err

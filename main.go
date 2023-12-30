@@ -120,7 +120,7 @@ func fieldsWorker(line string, delimiter string, list *internal.List) (string, e
 
 	for index, from := range list.SortedKeys() {
 		to := list.Range(from)
-		if to == -1 || to > len(fields) {
+		if to == internal.EndOfTheList || to > len(fields) {
 			to = len(fields)
 		}
 		// don't print the comma in the end
@@ -140,7 +140,7 @@ func bytesWorker(line string, _ string, list *internal.List) (string, error) {
 	var builder strings.Builder
 	for _, from := range list.SortedKeys() {
 		to := list.Range(from)
-		if to == -1 || to > int(reader.Size()) {
+		if to == internal.EndOfTheList || to > int(reader.Size()) {
 			to = int(reader.Size())
 		}
 		for i := from; i <= to; i++ {
