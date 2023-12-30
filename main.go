@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	log.Println(list)
 	run(delimiter, list, worker)
 }
 
@@ -89,14 +89,25 @@ func (list *List) SortedKeys() []int {
 }
 
 func (list *List) appendNumber(from int, to int) {
+	alreadyAdded := false
 	// merge ranges if needed
 	for start, end := range list.ranges {
-		if start > from && (end < to || to == -1) {
-			delete(list.ranges, start)
-			list.ranges[from] = to
+		if from-1 <= start && (to > end && end != -1 || to == -1) {
+			if from-1 == start || from == start {
+				list.ranges[start] = to
+			} else {
+				delete(list.ranges, start)
+				list.ranges[from] = to
+			}
+			alreadyAdded = true
+		} else if from >= start && ((to < end && to != -1) || (to == end)) {
+			alreadyAdded = true
 		}
 	}
-	list.ranges[from] = to
+
+	if !alreadyAdded {
+		list.ranges[from] = to
+	}
 }
 
 func parseList(data string) (*List, error) {
@@ -241,10 +252,10 @@ func fieldsWorker(line string, delimiter string, list *List) (string, error) {
 			to = len(fields)
 		}
 		// don't print the comma in the end
-		if index == len(list.SortedKeys())-1 {
-			delimiter = ""
-		}
 		for i := from; i <= to; i++ {
+			if index == len(list.SortedKeys())-1 && i == to {
+				delimiter = ""
+			}
 			builder.WriteString(fmt.Sprintf("%s%s", fields[i-1], delimiter))
 		}
 	}
