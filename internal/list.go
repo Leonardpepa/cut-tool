@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"log"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,6 +15,8 @@ var (
 	invalidNumberFormat        = errors.New("invalid number format")
 	invalidRangeWithNoEndPoint = errors.New("invalid range with no endpoint: -")
 )
+
+const endOfTheList = math.MaxInt32
 
 type List struct {
 	// set of ranges
@@ -40,25 +43,38 @@ func (list *List) SortedKeys() []int {
 }
 
 func (list *List) appendNumber(from int, to int) {
-	alreadyAdded := false
-	// merge ranges if needed
-	for start, end := range list.ranges {
-		if from-1 <= start && (to > end && end != -1 || to == -1) {
-			if from-1 == start || from == start {
-				list.ranges[start] = to
-			} else {
-				delete(list.ranges, start)
-				list.ranges[from] = to
-			}
-			alreadyAdded = true
-		} else if from >= start && ((to < end && to != -1) || (to == end)) {
-			alreadyAdded = true
-		}
-	}
+	hasBeenAdded := false
 
-	if !alreadyAdded {
+	for rangeStart, rangeStop := range list.ranges {
+
+		// bigger range already exists
+		if rangeStart <= from && rangeStop >= to {
+			// nothing
+			hasBeenAdded = true
+		}
+
+		// case bigger range
+		// merge with the old one
+		if from <= rangeStart && to > rangeStop {
+			if from != rangeStart {
+				delete(list.ranges, rangeStart)
+			}
+			list.ranges[from] = to
+			hasBeenAdded = true
+		}
+
+		//the continuation of a list
+
+		if (from == rangeStop || from-1 == rangeStop) && to >= rangeStop {
+			list.ranges[rangeStart] = to
+			hasBeenAdded = true
+		}
+
+	}
+	if !hasBeenAdded {
 		list.ranges[from] = to
 	}
+
 }
 
 func ParseList(data string) (*List, error) {
@@ -75,6 +91,7 @@ func ParseList(data string) (*List, error) {
 
 		if isRange {
 			start, end, err := parseRange(val)
+
 			if err != nil {
 				return nil, err
 			}
@@ -113,12 +130,10 @@ func prepareListArguments(data string) []string {
 	return args
 }
 
-func parseRange(data string) (start, end int, err error) {
-
+func parseRange(data string) (int, int, error) {
 	if data == "-" {
-		err = invalidRangeWithNoEndPoint
+		return 0, 0, invalidRangeWithNoEndPoint
 	}
-
 	values := strings.Split(data, "-")
 
 	if len(values) != 2 {
@@ -126,16 +141,24 @@ func parseRange(data string) (start, end int, err error) {
 	}
 
 	// default 0 means from the beginning of the line
-	start, err = parseEmptyNumberInRange(values[0], 1)
+	start, err := parseEmptyNumberInRange(values[0], 1)
 
-	// default -1 means end of the line
-	end, err = parseEmptyNumberInRange(values[1], -1)
-
-	if end != -1 && start > end {
-		err = decreasingRage
+	if err != nil {
+		return 0, 0, err
 	}
 
-	return
+	// default -1 means end of the line
+	end, err := parseEmptyNumberInRange(values[1], endOfTheList)
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if end != -1 && start > end {
+		return 0, 0, decreasingRage
+	}
+
+	return start, end, nil
 }
 
 func parseEmptyNumberInRange(value string, defaultValue int) (int, error) {
