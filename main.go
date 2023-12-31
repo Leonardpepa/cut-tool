@@ -65,7 +65,14 @@ func run(delimiter string, list *internal.List, worker func(line string, delimit
 	filenames := flag.Args()
 
 	if len(filenames) == 0 || (len(filenames) == 1 && filenames[0] == "-") {
-		traverseFileByLine(bufio.NewScanner(os.Stdin), delimiter, list, worker)
+		output, err := traverseFileByLine(bufio.NewScanner(os.Stdin), delimiter, list, worker)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print(output)
+
 		return
 	}
 
@@ -74,7 +81,13 @@ func run(delimiter string, list *internal.List, worker func(line string, delimit
 		if err != nil {
 			log.Fatal(err)
 		}
-		traverseFileByLine(bufio.NewScanner(file), delimiter, list, worker)
+		output, err := traverseFileByLine(bufio.NewScanner(file), delimiter, list, worker)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print(output)
 
 		err = file.Close()
 		if err != nil {
@@ -163,16 +176,18 @@ func extractBytes(line string, _ string, list *internal.List) (string, error) {
 	return builder.String(), nil
 }
 
-func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *internal.List, work func(line string, delimiter string, list *internal.List) (string, error)) {
+func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *internal.List, work func(line string, delimiter string, list *internal.List) (string, error)) (string, error) {
 	scanner.Split(bufio.ScanLines)
+	var builder strings.Builder
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		s, err := work(line, delimiter, list)
 		if err != nil {
-			log.Fatalln(err)
+			return "", err
 		}
-		fmt.Println(s)
+		builder.WriteString(s + "\n")
 	}
 
+	return builder.String(), nil
 }
