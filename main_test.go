@@ -72,6 +72,10 @@ func TestExtractFields(t *testing.T) {
 		expected = "Song title,Artist\n\"10000 Reasons (Bless the Lord)\",Matt Redman and Jonas Myrin\n\"20 Good Reasons\",Thirsty Merc\n\"Adore You\",Harry Styles\n\"Africa\",Toto\n"
 
 		testOutput(t, input, ",", "1,2", expected)
+
+		expected = "Song title,Artist,Year,Progression,Recorded Key\n\"10000 Reasons (Bless the Lord)\",Matt Redman and Jonas Myrin,2012,IV–I–V–vi,G major\n\"20 Good Reasons\",Thirsty Merc,2007,I–V–vi–IV,D♭ major\n\"Adore You\",Harry Styles,2019,vi−I−IV−V,C minor\n\"Africa\",Toto,1982,vi−IV–I–V (chorus),F♯ minor (chorus)\n"
+		testOutput(t, input, ",", "2,2,3,1-", expected)
+
 	})
 }
 
