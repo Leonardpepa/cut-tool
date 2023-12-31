@@ -53,10 +53,10 @@ func TestExtractFields(t *testing.T) {
 
 		expected := "f1\n1\n6\n11\n16\n21\n"
 
-		testOutput(t, input, "\t", "2", expected)
+		testOutput(t, input, "\t", "2", expected, extractFields)
 
 		expected = "f0\tf1\n0\t1\n5\t6\n10\t11\n15\t16\n20\t21\n"
-		testOutput(t, input, "\t", "1,2", expected)
+		testOutput(t, input, "\t", "1,2", expected, extractFields)
 
 		input = `Song title,Artist,Year,Progression,Recorded Key
 "10000 Reasons (Bless the Lord)",Matt Redman and Jonas Myrin,2012,IV–I–V–vi,G major
@@ -67,19 +67,19 @@ func TestExtractFields(t *testing.T) {
 
 		expected = "Song title\n\"10000 Reasons (Bless the Lord)\"\n\"20 Good Reasons\"\n\"Adore You\"\n\"Africa\"\n"
 
-		testOutput(t, input, ",", "1", expected)
+		testOutput(t, input, ",", "1", expected, extractFields)
 
 		expected = "Song title,Artist\n\"10000 Reasons (Bless the Lord)\",Matt Redman and Jonas Myrin\n\"20 Good Reasons\",Thirsty Merc\n\"Adore You\",Harry Styles\n\"Africa\",Toto\n"
 
-		testOutput(t, input, ",", "1,2", expected)
+		testOutput(t, input, ",", "1,2", expected, extractFields)
 
 		expected = "Song title,Artist,Year,Progression,Recorded Key\n\"10000 Reasons (Bless the Lord)\",Matt Redman and Jonas Myrin,2012,IV–I–V–vi,G major\n\"20 Good Reasons\",Thirsty Merc,2007,I–V–vi–IV,D♭ major\n\"Adore You\",Harry Styles,2019,vi−I−IV−V,C minor\n\"Africa\",Toto,1982,vi−IV–I–V (chorus),F♯ minor (chorus)\n"
-		testOutput(t, input, ",", "2,2,3,1-", expected)
+		testOutput(t, input, ",", "2,2,3,1-", expected, extractFields)
 
 	})
 }
 
-func testOutput(t *testing.T, input string, delimiter string, args string, expected string) {
+func testOutput(t *testing.T, input string, delimiter string, args string, expected string, worker func(line string, delimiter string, list *internal.List) (string, error)) {
 	list, err := internal.ParseList(args)
 
 	if err != nil {
