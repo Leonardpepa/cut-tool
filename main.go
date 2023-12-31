@@ -129,7 +129,7 @@ func extractFields(line string, delimiter string, list *internal.List) (string, 
 		if to == internal.EndOfTheList || to > len(fields) {
 			to = len(fields)
 		}
-		// don't print the comma in the end
+		// don't print the delimiter in the end
 		for i := from; i <= to; i++ {
 			if index == len(list.SortedKeys())-1 && i == to {
 				delimiter = ""
