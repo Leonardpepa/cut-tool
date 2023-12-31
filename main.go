@@ -17,13 +17,15 @@ var (
 	noFlagSpecified     = errors.New("no flag specified")
 )
 
+var Empty = ""
+
 func main() {
 
 	var delimiter string
 
-	f := flag.String("f", "", "fields_list")
-	b := flag.String("b", "", "bytes_list")
-	c := flag.String("c", "", "characters_list")
+	f := flag.String("f", Empty, "fields_list")
+	b := flag.String("b", Empty, "bytes_list")
+	c := flag.String("c", Empty, "characters_list")
 	flag.StringVar(&delimiter, "d", "\t", "delimiter")
 
 	flag.Parse()
@@ -37,19 +39,19 @@ func main() {
 	var list *internal.List
 	var worker func(line string, delimiter string, list *internal.List) (string, error)
 
-	if *f != "" {
+	if *f != Empty {
 		list, err = internal.ParseList(*f)
 		worker = extractFields
 	}
 
-	if *b != "" {
+	if *b != Empty {
 		list, err = internal.ParseList(*b)
 		worker = extractBytes
 	}
 
 	// same as bytes
 	// doesn't support multibyte chars for now
-	if *c != "" {
+	if *c != Empty {
 		list, err = internal.ParseList(*c)
 		worker = extractBytes
 	}
@@ -98,29 +100,29 @@ func run(delimiter string, list *internal.List, worker func(line string, delimit
 
 func validateFlags(f, b, c, d *string) error {
 
-	if *f == "" && *b == "" && *c == "" {
+	if *f == Empty && *b == Empty && *c == Empty {
 		return noFlagSpecified
 	}
 
-	if *f != "" {
-		if *b != "" || *c != "" {
+	if *f != Empty {
+		if *b != Empty || *c != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *b != "" {
-		if *f != "" || *c != "" {
+	if *b != Empty {
+		if *f != Empty || *c != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *c != "" {
-		if *b != "" || *f != "" {
+	if *c != Empty {
+		if *b != Empty || *f != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *d != "\t" && *f == "" {
+	if *d != "\t" && *f == Empty {
 		return delimiterError
 	}
 
@@ -145,7 +147,7 @@ func extractFields(line string, delimiter string, list *internal.List) (string, 
 		// don't print the delimiter in the end
 		for i := from; i <= to; i++ {
 			if index == len(list.SortedKeys())-1 && i == to {
-				delimiter = ""
+				delimiter = Empty
 			}
 			builder.WriteString(fmt.Sprintf("%s%s", fields[i-1], delimiter))
 		}
@@ -166,7 +168,7 @@ func extractBytes(line string, _ string, list *internal.List) (string, error) {
 			b := make([]byte, 1)
 			_, err := reader.ReadAt(b, int64(i-1))
 			if err != nil {
-				return "", err
+				return Empty, err
 			}
 
 			builder.WriteString(fmt.Sprintf("%s", string(b)))
@@ -184,7 +186,7 @@ func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *internal
 		line := scanner.Text()
 		s, err := work(line, delimiter, list)
 		if err != nil {
-			return "", err
+			return Empty, err
 		}
 		builder.WriteString(s + "\n")
 	}
