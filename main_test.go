@@ -96,7 +96,6 @@ func TestExtractBytes(t *testing.T) {
 		expected = "f0\tf1\tf2\tf3\tf4\n0\t1\t2\t3\t4\n5\t6\t7\t8\t9\n10\t11\t12\t13\t14\n15\t16\t17\t18\t19\n20\t21\t22\t23\t24\n"
 
 		testOutput(t, input, defaultDelimiter, "1-", expected, extractBytes)
-
 	})
 }
 
