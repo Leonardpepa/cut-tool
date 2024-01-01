@@ -27,6 +27,10 @@ func TestParseList(t *testing.T) {
 
 		testList(t, "2-5,1-1", map[int]int{1: 5})
 
+		testList(t, "2-5,2-7", map[int]int{2: 7})
+
+		testList(t, "1-5,2-7", map[int]int{1: 7})
+
 		testErrorList(t, "3-1", decreasingRage)
 
 		testErrorList(t, "3r", invalidNumberFormat)

@@ -51,6 +51,7 @@ func (list *List) appendNumber(from int, to int) {
 		if rangeStart <= from && rangeStop >= to {
 			// nothing
 			hasBeenAdded = true
+			continue
 		}
 
 		// case bigger range
@@ -61,12 +62,14 @@ func (list *List) appendNumber(from int, to int) {
 			}
 			list.ranges[from] = to
 			hasBeenAdded = true
+			continue
 		}
 
 		//the continuation of a list
 		if (from == rangeStop || from-1 == rangeStop) && to >= rangeStop {
 			list.ranges[rangeStart] = to
 			hasBeenAdded = true
+			continue
 		}
 
 		// merge from beginning
@@ -78,6 +81,13 @@ func (list *List) appendNumber(from int, to int) {
 				list.ranges[from] = to
 			}
 			hasBeenAdded = true
+			continue
+		}
+
+		if from-1 == rangeStart && to > rangeStop {
+			list.ranges[rangeStart] = to
+			hasBeenAdded = true
+			continue
 		}
 	}
 	if !hasBeenAdded {
