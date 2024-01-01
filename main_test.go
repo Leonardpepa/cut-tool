@@ -79,6 +79,23 @@ func TestExtractFields(t *testing.T) {
 	})
 }
 
+func TestExtractBytes(t *testing.T) {
+	t.Run("should return the correct fields", func(t *testing.T) {
+		defaultDelimiter := "\t"
+		input := `f0	f1	f2	f3	f4
+0	1	2	3	4
+5	6	7	8	9
+10	11	12	13	14
+15	16	17	18	19
+20	21	22	23	24`
+
+		expected := "0f1\n\t\t2\n\t\t7\n011\n516\n021\n"
+
+		testOutput(t, input, defaultDelimiter, "2,4-5", expected, extractBytes)
+
+	})
+}
+
 func testOutput(t *testing.T, input string, delimiter string, args string, expected string, worker func(line string, delimiter string, list *internal.List) (string, error)) {
 	list, err := internal.ParseList(args)
 
@@ -86,7 +103,7 @@ func testOutput(t *testing.T, input string, delimiter string, args string, expec
 		t.Error(err)
 	}
 
-	output, err := traverseFileByLine(bufio.NewScanner(strings.NewReader(input)), delimiter, list, extractFields)
+	output, err := traverseFileByLine(bufio.NewScanner(strings.NewReader(input)), delimiter, list, worker)
 
 	if err != nil {
 		t.Error(err)
