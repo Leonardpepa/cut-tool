@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -22,15 +23,27 @@ var Empty = ""
 func main() {
 
 	var delimiter string
+	var help bool
+	var fields string
+	var bytesFlag string
+	var chars string
 
-	f := flag.String("f", Empty, "fields_list")
-	b := flag.String("b", Empty, "bytes_list")
-	c := flag.String("c", Empty, "characters_list")
+	flag.StringVar(&fields, "f", Empty, "fields_list")
+	flag.StringVar(&bytesFlag, "b", Empty, "bytes_list")
+	flag.StringVar(&chars, "c", Empty, "characters_list")
 	flag.StringVar(&delimiter, "d", "\t", "delimiter")
+
+	flag.BoolVar(&help, "h", false, "help")
+	flag.BoolVar(&help, "help", false, "help")
 
 	flag.Parse()
 
-	err := validateFlags(f, b, c, &delimiter)
+	if help {
+		usage()
+		os.Exit(0)
+	}
+
+	err := validateFlags(fields, bytesFlag, chars, &delimiter)
 
 	if err != nil {
 		log.Fatal(err)
@@ -39,20 +52,20 @@ func main() {
 	var list *internal.List
 	var worker func(line string, delimiter string, list *internal.List) (string, error)
 
-	if *f != Empty {
-		list, err = internal.ParseList(*f)
+	if fields != Empty {
+		list, err = internal.ParseList(fields)
 		worker = extractFields
 	}
 
-	if *b != Empty {
-		list, err = internal.ParseList(*b)
+	if bytesFlag != Empty {
+		list, err = internal.ParseList(bytesFlag)
 		worker = extractBytes
 	}
 
 	// same as bytes
 	// doesn't support multibyte chars for now
-	if *c != Empty {
-		list, err = internal.ParseList(*c)
+	if chars != Empty {
+		list, err = internal.ParseList(chars)
 		worker = extractBytes
 	}
 
@@ -98,31 +111,31 @@ func run(delimiter string, list *internal.List, worker func(line string, delimit
 	}
 }
 
-func validateFlags(f, b, c, d *string) error {
+func validateFlags(f, b, c string, d *string) error {
 
-	if *f == Empty && *b == Empty && *c == Empty {
+	if f == Empty && b == Empty && c == Empty {
 		return noFlagSpecified
 	}
 
-	if *f != Empty {
-		if *b != Empty || *c != Empty {
+	if f != Empty {
+		if b != Empty || c != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *b != Empty {
-		if *f != Empty || *c != Empty {
+	if b != Empty {
+		if f != Empty || c != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *c != Empty {
-		if *b != Empty || *f != Empty {
+	if c != Empty {
+		if b != Empty || f != Empty {
 			return toManyListArguments
 		}
 	}
 
-	if *d != "\t" && *f == Empty {
+	if *d != "\t" && f == Empty {
 		return delimiterError
 	}
 
@@ -192,4 +205,27 @@ func traverseFileByLine(scanner *bufio.Scanner, delimiter string, list *internal
 	}
 
 	return builder.String(), nil
+}
+
+func usage() {
+	fmt.Printf(`Usage: %s OPTION... [FILE]...
+Print selected parts of lines from each FILE to standard output.
+
+With no FILE, or when FILE is -, read standard input.
+
+Mandatory arguments to long options are mandatory for short options too.
+  -b, --bytes=LIST        select only these bytes
+  -c, --characters=LIST   select only these characters
+  -d, --delimiter=DELIM   use DELIM instead of TAB for field delimiter
+  -f, --fields=LIST       select only these fields;  also print any line
+
+Use one, and only one of -b, -c or -f.  Each LIST is made up of one
+range, or many ranges separated by commas.  Selected input is written
+in the same order that it is read, and is written exactly once.
+Each range is one of:
+
+  N     N'th byte, character or field, counted from 1
+  N-    from N'th byte, character or field, to end of line
+  N-M   from N'th to M'th (included) byte, character or field
+  -M    from first to M'th (included) byte, character or field`, filepath.Base(os.Args[0]))
 }
