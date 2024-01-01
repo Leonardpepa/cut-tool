@@ -80,7 +80,7 @@ func TestExtractFields(t *testing.T) {
 }
 
 func TestExtractBytes(t *testing.T) {
-	t.Run("should return the correct fields", func(t *testing.T) {
+	t.Run("should return the correct bytes", func(t *testing.T) {
 		defaultDelimiter := "\t"
 		input := `f0	f1	f2	f3	f4
 0	1	2	3	4
@@ -96,6 +96,7 @@ func TestExtractBytes(t *testing.T) {
 		expected = "f0\tf1\tf2\tf3\tf4\n0\t1\t2\t3\t4\n5\t6\t7\t8\t9\n10\t11\t12\t13\t14\n15\t16\t17\t18\t19\n20\t21\t22\t23\t24\n"
 
 		testOutput(t, input, defaultDelimiter, "1-", expected, extractBytes)
+
 	})
 }
 
@@ -112,7 +113,7 @@ func testOutput(t *testing.T, input string, delimiter string, args string, expec
 		t.Error(err)
 	}
 
-	if strings.Trim(expected, "") != strings.Trim(output, "") {
+	if expected != output {
 		t.Errorf("expected %#v, got %#v", expected, output)
 	}
 }
