@@ -25,6 +25,8 @@ func TestParseList(t *testing.T) {
 
 		testList(t, `"1-2,2-3,4,5"`, map[int]int{1: 5})
 
+		testList(t, "2-5,1-1", map[int]int{1: 5})
+
 		testErrorList(t, "3-1", decreasingRage)
 
 		testErrorList(t, "3r", invalidNumberFormat)

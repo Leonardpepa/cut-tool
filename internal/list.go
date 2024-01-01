@@ -64,12 +64,21 @@ func (list *List) appendNumber(from int, to int) {
 		}
 
 		//the continuation of a list
-
 		if (from == rangeStop || from-1 == rangeStop) && to >= rangeStop {
 			list.ranges[rangeStart] = to
 			hasBeenAdded = true
 		}
 
+		// merge from beginning
+		if from == rangeStart-1 {
+			delete(list.ranges, rangeStart)
+			if to < rangeStop {
+				list.ranges[from] = rangeStop
+			} else {
+				list.ranges[from] = to
+			}
+			hasBeenAdded = true
+		}
 	}
 	if !hasBeenAdded {
 		list.ranges[from] = to
