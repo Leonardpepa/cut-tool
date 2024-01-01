@@ -25,14 +25,14 @@ func TestValidateFlags(t *testing.T) {
 }
 
 func testValidFlags(t *testing.T, fields, bytes, chars, delimiter string) {
-	err := validateFlags(&fields, &bytes, &chars, &delimiter)
+	err := validateFlags(fields, bytes, chars, &delimiter)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func testInvalidFlags(t *testing.T, fields, bytes, chars, delimiter string, expected error) {
-	err := validateFlags(&fields, &bytes, &chars, &delimiter)
+	err := validateFlags(fields, bytes, chars, &delimiter)
 	if err == nil {
 		t.Errorf("parsed wrong flags, expected %v", expected)
 	}

@@ -29,9 +29,16 @@ func main() {
 	var chars string
 
 	flag.StringVar(&fields, "f", Empty, "fields_list")
+	flag.StringVar(&fields, "fields", Empty, "fields_list")
+
 	flag.StringVar(&bytesFlag, "b", Empty, "bytes_list")
+	flag.StringVar(&bytesFlag, "bytes", Empty, "bytes_list")
+
 	flag.StringVar(&chars, "c", Empty, "characters_list")
+	flag.StringVar(&chars, "characters", Empty, "characters_list")
+
 	flag.StringVar(&delimiter, "d", "\t", "delimiter")
+	flag.StringVar(&delimiter, "delimiter", "\t", "delimiter")
 
 	flag.BoolVar(&help, "h", false, "help")
 	flag.BoolVar(&help, "help", false, "help")
